@@ -29,5 +29,5 @@ if __name__=="__main__":
   )
 
   # Print the response
-  print(response.status_code)
-  print(response.json())
+  print("status code: ", response.status_code)
+  print("response: ", response.json())
