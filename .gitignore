@@ -1,2 +1,8 @@
 ### Ignore virtualenvs
 venv
+
+### Ignore the config file
+config.py
+
+### ignore pycache files
+__pycache__
