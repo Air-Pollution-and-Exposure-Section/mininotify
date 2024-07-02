@@ -34,6 +34,8 @@ import typing
 
 
 class EmailLogs(Base):
+   __tablename__='email_logs'
+   
    pass
 
 class Handler():
