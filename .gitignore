@@ -6,3 +6,6 @@ config.py
 
 ### ignore pycache files
 __pycache__
+
+### ignore skynet dir
+skynet

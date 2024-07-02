@@ -68,7 +68,7 @@ class Handler():
             print("No session to close")
 
 
-def send_email(email:str, personalisation:dict)->Tuple[str, json]:
+def send_email(email:str, personalisation:dict)->Tuple[str, str]:
   # Define the headers and data
   headers = {
       'Authorization': f'ApiKey-v1 {api_key}',
