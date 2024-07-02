@@ -32,11 +32,18 @@ from skynet.database.tables.Particulate import Particulate
 
 import typing
 
+from  sqlalchemy import DateTime
+
+from sqlalchemy.exc import IntegrityError
 
 class EmailLogs(Base):
    __tablename__='email_logs'
-   
-   pass
+   date = Column(DateTime, primary_key=True)
+   participant_id = Column(Integer, ForeignKey('participant.id'), primary_key=True)
+   status_code = Column(Integer)
+   error = Column(String)
+   message = Column(String)
+
 
 class Handler():
     def __init__(self, user:str, dbname:str, host:str, password:str, port:str) -> None:
@@ -96,15 +103,35 @@ def record_email_logs(participant_id, status_code, response):
   date = current_utc_time.strftime('%Y-%m-%d %H:%M:%S')
   status_code = status_code
   response = response
-  error = response['error'] if 'error' in response else None
+  error = response['errors'][0]['error'] if 'errors' in response else None
+  message = response['errors'][0]['message'] if 'errors' in response else None
 
-  # dbHandler = Handler(user=user, dbname=dbname, host=host, password=password, port=port)
+  dbHandler = Handler(user=user, dbname=dbname, host=host, password=password, port=port)
 
-  # dbHandler.start_session()
+  dbHandler.start_session()
 
-  # dbHandler.session
+  dbHandler.session
 
-  print(participant_id, date, status_code, error)
+  record = EmailLogs(
+     date=date,
+     participant_id=participant_id,
+     status_code=status_code,
+     error=error,
+     message=message
+  )
+
+  try:
+      dbHandler.session.add(record)
+      dbHandler.session.commit()
+      print("Email Logs data inserted successfully.")
+  except IntegrityError:
+      dbHandler.session.rollback()
+      print("Failed to insert Email Logs data due to integrity error.")
+  except Exception as e:
+      dbHandler.session.rollback()
+      print(f"Failed to insert Email Logs data: {e}")
+  
+  dbHandler.close_session()
 
 
 def run(participant_id:int)->None:
@@ -130,19 +157,24 @@ def run(participant_id:int)->None:
 
   # HUMIDITIES
   # Calculate the time 24 hours ago from now
-  time_24_hours_ago = datetime.utcnow() - timedelta(hours=24)
+  # Get the current time in UTC
+  current_utc_time = datetime.now(timezone.utc)
+  # Calculate the time 24 hours ago from now in UTC
+  time_24_hours_ago = current_utc_time - timedelta(hours=24)
 
   # Perform the query to get the maximum raw_val within the last 24 hours
   hHigh = dbHandler.session.query(func.max(Humidity.raw_val)).filter(
       Humidity.date >= time_24_hours_ago,
       Humidity.instrument_id==instrument_id
   ).scalar()
+  print(hHigh)
 
   # Perform the query to get the min raw_val within the last 24 hours
   hLow = dbHandler.session.query(func.min(Humidity.raw_val)).filter(
       Humidity.date >= time_24_hours_ago,
       Humidity.instrument_id==instrument_id
   ).scalar()
+  print(hLow)
 
   # Perform the query to get the avg raw_val within the last 24 hours
   hAvg = dbHandler.session.query(func.avg(Humidity.raw_val)).filter(
@@ -151,8 +183,9 @@ def run(participant_id:int)->None:
   ).scalar()
 
   # TEMPS
-  # Calculate the time 24 hours ago from now
-  time_24_hours_ago = datetime.utcnow() - timedelta(hours=24)
+  current_utc_time = datetime.now(timezone.utc)
+  # Calculate the time 24 hours ago from now in UTC
+  time_24_hours_ago = current_utc_time - timedelta(hours=24)
 
   # Perform the query to get the maximum raw_val within the last 24 hours
   tHigh = dbHandler.session.query(func.max(Temperature.raw_val)).filter(
@@ -196,6 +229,9 @@ def run(participant_id:int)->None:
 
   # PM2P5S
   # Subquery to calculate the average of pm2p5_cf1 for channels 'a' and 'b' for a specific instrument_id
+  current_utc_time = datetime.now(timezone.utc)
+  # Calculate the time 24 hours ago from now in UTC
+  time_24_hours_ago = current_utc_time - timedelta(hours=24)
   subquery = dbHandler.session.query(
       Particulate.date,
       func.avg(Particulate.pm2p5_cf1).label('avg_pm2p5_cf1')
@@ -258,7 +294,10 @@ if __name__=="__main__":
   from config import HOST as host
   from config import PORT as port
 
-  participant_ids = [1]
+  participant_ids = [1, 3]
 
   for id in participant_ids:
-    run(participant_id=id)
+    try:
+      run(participant_id=id)
+    except:
+       print(f'Could not send email to participant id {id}')
