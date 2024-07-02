@@ -24,13 +24,17 @@ from skynet.database.tables.Location import Location
 from skynet.database.tables.PurpleAirKeys import PurpleAirKeys
 
 from sqlalchemy import func, and_
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from skynet.database.tables.Humidity import Humidity
 from skynet.database.tables.Temperature import Temperature
 from skynet.database.tables.Particulate import Particulate
 
 import typing
+
+
+class EmailLogs(Base):
+   pass
 
 class Handler():
     def __init__(self, user:str, dbname:str, host:str, password:str, port:str) -> None:
@@ -76,11 +80,29 @@ def send_email(email:str, personalisation:dict)->Tuple[str, json]:
       json=data
   )
 
-
   # Print the response
   print("status code: ", response.status_code)
   print("response: ", response.json())
   return [response.status_code, response.json()]
+
+
+def record_email_logs(participant_id, status_code, response):
+  participant_id = participant_id
+  # Get the current date and time in UTC
+  current_utc_time = datetime.now(timezone.utc)
+  # Format the date and time as a string in the desired format
+  date = current_utc_time.strftime('%Y-%m-%d %H:%M:%S')
+  status_code = status_code
+  response = response
+  error = response['error'] if 'error' in response else None
+
+  # dbHandler = Handler(user=user, dbname=dbname, host=host, password=password, port=port)
+
+  # dbHandler.start_session()
+
+  # dbHandler.session
+
+  print(participant_id, date, status_code, error)
 
 
 def run(participant_id:int)->None:
@@ -220,7 +242,10 @@ def run(participant_id:int)->None:
 
   dbHandler.close_session()
 
-  send_email(email=email, personalisation=personalisation)
+  status_code, response = send_email(email=email, personalisation=personalisation)
+
+  # log the email records in the database
+  record_email_logs(participant_id, status_code, response)
 
 
 if __name__=="__main__":
