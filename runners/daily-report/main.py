@@ -29,6 +29,7 @@ from datetime import datetime, timedelta, timezone
 
 from skynet.database.tables.Humidity import Humidity
 from skynet.database.tables.Temperature import Temperature
+from skynet.database.tables.CO2 import CO2
 from skynet.database.tables.Particulate import Particulate
 
 import typing
@@ -140,6 +141,7 @@ def run(participant_id:int)->None:
 	instrument_id = instrument_ids[0]
 	# get the instrument serial number
 	instrument = dbHandler.session.query(Instrument).filter_by(id=instrument_id).first()
+
 	# HUMIDITIES
 	# Calculate the time 24 hours ago from now
 	# Get the current time in UTC
@@ -163,6 +165,7 @@ def run(participant_id:int)->None:
 		Humidity.date >= time_24_hours_ago,
 		Humidity.instrument_id==instrument_id
 	).scalar()
+
 	# TEMPS
 	current_utc_time = datetime.now(timezone.utc)
 	# Calculate the time 24 hours ago from now in UTC
@@ -182,24 +185,27 @@ def run(participant_id:int)->None:
 		Temperature.date >= time_24_hours_ago,
 		Temperature.instrument_id==instrument_id
 	).scalar()
-	# pm2p5s
-	# Calculate the time 24 hours ago from now
-	time_24_hours_ago = datetime.utcnow() - timedelta(hours=24)
+
+	# CO2s
+	current_utc_time = datetime.now(timezone.utc)
+	# Calculate the time 24 hours ago from now in UTC
+	time_24_hours_ago = current_utc_time - timedelta(hours=24)
 	# Perform the query to get the maximum raw_val within the last 24 hours
-	pm2p5High = dbHandler.session.query(func.max(Temperature.raw_val)).filter(
-		Temperature.date >= time_24_hours_ago,
-		Temperature.instrument_id==instrument_id
+	co2High = dbHandler.session.query(func.max(CO2.comp_val)).filter(
+		CO2.date >= time_24_hours_ago,
+		CO2.instrument_id==instrument_id
 	).scalar()
 	# Perform the query to get the min raw_val within the last 24 hours
-	tLow = dbHandler.session.query(func.min(Temperature.raw_val)).filter(
-		Temperature.date >= time_24_hours_ago,
-		Temperature.instrument_id==instrument_id
+	co2Low = dbHandler.session.query(func.min(CO2.comp_val)).filter(
+		CO2.date >= time_24_hours_ago,
+		CO2.instrument_id==instrument_id
 	).scalar()
 	# Perform the query to get the avg raw_val within the last 24 hours
-	tAvg = dbHandler.session.query(func.avg(Temperature.raw_val)).filter(
-		Temperature.date >= time_24_hours_ago,
-		Temperature.instrument_id==instrument_id
+	co2Avg = dbHandler.session.query(func.avg(CO2.comp_val)).filter(
+		CO2.date >= time_24_hours_ago,
+		CO2.instrument_id==instrument_id
 	).scalar()
+
 	# PM2P5s
 	# Subquery to calculate the average of pm2p5_cf1 for channels 'a' and 'b' for a specific instrument_id
 	current_utc_time = datetime.now(timezone.utc)
@@ -243,7 +249,11 @@ def run(participant_id:int)->None:
 		'pm2p5High': round(float(pm2p5High), 2) if pm2p5High is not None else 0,
 		'pm2p5Low': round(float(pm2p5Low), 2) if pm2p5Low is not None else 0,
 		'pm2p5Avg': round(float(pm2p5Avg), 2) if pm2p5Avg is not None else 0,
+		'co2High' : round(float(co2High), 2) if co2High is not None else 0,
+		'co2Low' : round(float(co2Low), 2) if co2Low is not None else 0,
+		'co2Avg' : round(float(co2Avg), 2) if co2Avg is not None else 0,
 	}
+
 	email = participant.emails[0].email
 	# close the database connection
 	dbHandler.close_session()
@@ -264,7 +274,6 @@ if __name__=="__main__":
 	participant_ids = [1]
 
 	for id in participant_ids:
-		# status_code, response = run(participant_id=id)
 		try:
 			status_code, response = run(participant_id=id)
 			print(f"run completed with status_code: {status_code}")
