@@ -3,6 +3,7 @@ import requests
 from typing import Tuple
 import base64
 from datetime import datetime, timedelta, timezone
+import pandas as pd
 # import GC Notify keys
 from mininotify.config import API_KEY as api_key
 from mininotify.config import SHMURB_WEEKLY_REPORT_V1_TEMPLATE_ID as template_id
@@ -117,27 +118,27 @@ def encode_file_to_base64(file_path):
         file_content = file.read()
     return base64.b64encode(file_content).decode('utf-8')
 
-def run(participant_id:int):
-	### Query the SHMURB manifest view ans save it as a CSV file
-	"""
-	query ......
-	"""
+def encode_to_base64(content:bytes):
+	return base64.b64encode(content).decode('utf-8')
 
-	file_path = "tmp.txt"
-	base64_file_content = encode_file_to_base64(file_path)
-	personalisation = {
-		"first_name": "Jonathan",
-		"last_name": "Levine",
-		"application_file": {
-			"file": base64_file_content,
-			"filename": "tmp64.txt",
-			"sending_method": "attach"
-		}
-	}
+def run(participant_id:int):
 	# Intantiate a database handler
 	dbHandler = Handler(user=USER, dbname=DBNAME, host=HOST, password=PASSWORD, port=PORT)
 	# start a database session
 	dbHandler.start_session()
+	### Query the SHMURB manifest view ans save it as a CSV file
+	query = "select * from shmurb_manifest"
+	df = pd.read_sql_query(query, con=dbHandler.engine)
+	result_csv = df.to_csv(index=False)
+	personalisation = {
+		"first_name": "Jonathan",
+		"last_name": "Levine",
+		"application_file": {
+			"file": encode_to_base64(result_csv.encode('utf-8')),
+			"filename": "weekly_report.csv",
+			"sending_method": "attach"
+		}
+	}
 	participant = dbHandler.session.query(Participant).filter_by(id=participant_id).first()
 	email = participant.emails[0].email
 	# close the database session
