@@ -12,3 +12,6 @@ skynet
 
 ### ignore egg-info files from builds
 *.egg-info
+
+### ignore tmp files
+*tmp.txt
