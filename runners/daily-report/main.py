@@ -4,8 +4,8 @@ import json
 from typing import List, Union, Tuple
 
 # CONFIGS
-from config import API_KEY as api_key
-from config import TEMPLATE_ID as template_id
+from mininotify.config import API_KEY as api_key
+from mininotify.config import TEMPLATE_ID as template_id
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -255,11 +255,11 @@ def run(participant_id:int)->None:
 
 if __name__=="__main__":
 	# DB Handler configs
-	from config import DBNAME as dbname
-	from config import USER as user
-	from config import PASSWORD as password
-	from config import HOST as host
-	from config import PORT as port
+	from mininotify.config import DBNAME as dbname
+	from mininotify.config import USER as user
+	from mininotify.config import PASSWORD as password
+	from mininotify.config import HOST as host
+	from mininotify.config import PORT as port
 
 	participant_ids = [1]
 
