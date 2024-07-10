@@ -1,0 +1,14 @@
+### Ignore virtualenvs
+venv
+
+### Ignore the config file
+config.py
+
+### ignore pycache files
+__pycache__
+
+### ignore skynet dir
+skynet
+
+### ignore egg-info files from builds
+*.egg-info
