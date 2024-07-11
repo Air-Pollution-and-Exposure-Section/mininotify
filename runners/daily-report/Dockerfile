@@ -1,18 +1,18 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# Set the working directory in the container
+# Set the working directory to /app
 WORKDIR /app
 
-# Copy the entire mininotify directory into the container
-COPY . /app/mininotify
+# Install git
+RUN apt-get update && apt-get install -y git && apt-get clean
 
-# Change directory to skynet and install the package in editable mode
-RUN cd mininotify/skynet && pip install -e .
+# Copy the entire project directory into the container
+COPY . .
 
-# Set the working directory to mininotify
-WORKDIR /app/mininotify
+# Install the project in editable mode
+RUN pip install -e .
 
-# Run the command to execute your application
-CMD ["python3", "main.py"]
+# Define the command to run your script
+CMD ["python", "runners/daily-report/main.py"]
 
