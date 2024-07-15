@@ -1,4 +1,6 @@
 from setuptools import setup, find_packages
+from mininotify.config import GITHUB_USERNAME as username
+from mininotify.config import GITHUB_PAO as PAO
 
 setup(
     name='mininotify',
@@ -6,7 +8,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'some_package',  # other dependencies
-        'skynet @ git+https://github.com/Air-Pollution-and-Exposure-Section/skynet.git@96-add-emails-table-for-mininotify-support'
+        f'skynet @ git+https://{username}:{PAO}@github.com/Air-Pollution-and-Exposure-Section/skynet.git@96-add-emails-table-for-mininotify-support'
     ],
 )
 
