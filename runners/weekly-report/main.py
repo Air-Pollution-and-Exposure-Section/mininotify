@@ -130,17 +130,19 @@ def run(participant_id:int):
 	query = "select * from shmurb_manifest"
 	df = pd.read_sql_query(query, con=dbHandler.engine)
 	result_csv = df.to_csv(index=False)
+	participant = dbHandler.session.query(Participant).filter_by(id=participant_id).first()
+	email = participant.emails[0].email
+	first_name = participant.first_name
+	last_name = participant.last_name
 	personalisation = {
-		"first_name": "Jonathan",
-		"last_name": "Levine",
+		"first_name": first_name,
+		"last_name": last_name,
 		"application_file": {
 			"file": encode_to_base64(result_csv.encode('utf-8')),
 			"filename": "weekly_report.csv",
 			"sending_method": "attach"
 		}
 	}
-	participant = dbHandler.session.query(Participant).filter_by(id=participant_id).first()
-	email = participant.emails[0].email
 	# close the database session
 	dbHandler.close_session()
 	status_code, response = send_email(email=email, personalisation=personalisation)
@@ -148,7 +150,7 @@ def run(participant_id:int):
 	record_email_logs(participant_id, status_code, response)
 
 def main():
-	participant_ids=[1]
+	participant_ids=[1, 3]
 	for id in participant_ids:
 		run(participant_id=id)
 
